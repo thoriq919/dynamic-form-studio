@@ -6,10 +6,14 @@ export function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password.trim()).digest('hex');
 }
 
-let mysqlPool: mysql.Pool | null = null;
+declare global {
+  var __globalMysqlPool: mysql.Pool | undefined;
+}
 
 export async function initMySQL() {
-  if (mysqlPool) return mysqlPool;
+  if (global.__globalMysqlPool) {
+    return global.__globalMysqlPool;
+  }
 
   const host = process.env.DB_HOST || 'localhost';
   const user = process.env.DB_USER || 'root';
@@ -18,10 +22,6 @@ export async function initMySQL() {
   const port = Number(process.env.DB_PORT) || 3306;
 
   try {
-    const tempConn = await mysql.createConnection({ host, user, password, port });
-    await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-    await tempConn.end();
-
     const pool = mysql.createPool({
       host,
       user,
@@ -29,9 +29,24 @@ export async function initMySQL() {
       database,
       port,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 3,
+      idleTimeout: 10000,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
       queueLimit: 0,
     });
+
+    try {
+      await pool.query('SELECT 1');
+    } catch (err: any) {
+      if (err.code === 'ER_BAD_DB_ERROR') {
+        const rootConn = await mysql.createConnection({ host, user, password, port });
+        await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+        await rootConn.end();
+      } else {
+        throw err;
+      }
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -125,10 +140,11 @@ export async function initMySQL() {
       await pool.query('UPDATE users SET password = ? WHERE username = ?', [hashedDefaultAdmin, 'admin']);
     }
 
-    mysqlPool = pool;
+    global.__globalMysqlPool = pool;
     return pool;
   } catch (err: any) {
-    mysqlPool = null;
+    console.error('[MySQL Error]:', err.message);
+    global.__globalMysqlPool = undefined;
     return null;
   }
 }
@@ -141,29 +157,42 @@ export async function authenticateUser(username: string, password: string): Prom
   const hashed = hashPassword(cleanPassword);
 
   const pool = await initMySQL();
-  if (!pool) return null;
+  if (!pool) {
+    throw new Error('Tidak dapat terhubung ke database MySQL. Silakan restart dev server.');
+  }
 
-  try {
-    const [rows]: any = await pool.query(
-      'SELECT id, username, password, name, role, created_at FROM users WHERE LOWER(username) = ?',
-      [cleanUsername]
+  let [rows]: any = await pool.query(
+    'SELECT id, username, password, name, role, created_at FROM users WHERE LOWER(username) = ?',
+    [cleanUsername]
+  );
+
+  if (rows.length === 0 && cleanUsername === 'admin') {
+    const defaultHash = hashPassword('admindf1773');
+    const [insertRes]: any = await pool.query(
+      'INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+      ['admin', defaultHash, 'Administrator', 'admin']
     );
-    if (rows.length > 0) {
-      const userRow = rows[0];
-      if (userRow.password === hashed || userRow.password === cleanPassword) {
-        if (userRow.password === cleanPassword) {
-          await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashed, userRow.id]);
-        }
-        return {
-          id: userRow.id,
-          username: userRow.username,
-          name: userRow.name,
-          role: userRow.role as 'admin' | 'responder',
-          created_at: userRow.created_at,
-        };
+    [rows] = await pool.query(
+      'SELECT id, username, password, name, role, created_at FROM users WHERE id = ?',
+      [insertRes.insertId]
+    );
+  }
+
+  if (rows.length > 0) {
+    const userRow = rows[0];
+    if (userRow.password === hashed || userRow.password === cleanPassword) {
+      if (userRow.password === cleanPassword) {
+        await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashed, userRow.id]);
       }
+      return {
+        id: userRow.id,
+        username: userRow.username,
+        name: userRow.name,
+        role: userRow.role as 'admin' | 'responder',
+        created_at: userRow.created_at,
+      };
     }
-  } catch (err) {}
+  }
 
   return null;
 }
