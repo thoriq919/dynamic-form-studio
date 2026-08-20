@@ -149,7 +149,3 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run build` | Builds the project for production |
 | `npm run start` | Runs the production build |
 | `npm run lint` | Runs ESLint |
-
-### Default Credentials
-- **Username**: `admin`
-- **Password**: `admindf1773`
