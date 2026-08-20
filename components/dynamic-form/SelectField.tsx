@@ -41,11 +41,10 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         <select
           id={`field-${field.name}`}
           {...registerProps}
-          className={`w-full appearance-none rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm text-slate-800 transition-all duration-200 focus:outline-none focus:ring-2 ${
-            error
+          className={`w-full appearance-none rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm text-slate-800 transition-all duration-200 focus:outline-none focus:ring-2 ${error
               ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200'
               : 'border-slate-300 hover:border-slate-400 focus:border-indigo-500 focus:ring-indigo-100'
-          }`}
+            }`}
         >
           <option value="" className="text-slate-400">
             {field.placeholder || '-- Silakan Pilih --'}

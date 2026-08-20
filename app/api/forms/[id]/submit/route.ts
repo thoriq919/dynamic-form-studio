@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getFormById, saveFormSubmission } from '@/lib/db';
+import { getFormById, saveForm, saveFormSubmission } from '@/lib/db';
 import { evaluateFieldStates } from '@/lib/rules';
 import { generateDynamicZodSchema } from '@/lib/validation';
+import { initialFormsData } from '@/lib/seedData';
 
 export async function POST(
   req: Request,
@@ -9,7 +10,22 @@ export async function POST(
 ) {
   try {
     const formId = params.id;
-    const form = await getFormById(formId);
+    const body = await req.json();
+    const submissionData = body.data || {};
+    const passedConfig = body.formConfig;
+
+    let form = await getFormById(formId);
+
+    if (!form) {
+      const foundInInitial = initialFormsData.find(
+        f => String(f.id) === String(formId) || f.name.toLowerCase() === formId.toLowerCase()
+      );
+      if (foundInInitial) {
+        form = await saveForm(foundInInitial);
+      } else if (passedConfig && passedConfig.fields) {
+        form = await saveForm(passedConfig);
+      }
+    }
 
     if (!form) {
       return NextResponse.json(
@@ -17,9 +33,6 @@ export async function POST(
         { status: 404 }
       );
     }
-
-    const body = await req.json();
-    const submissionData = body.data || {};
 
     const evaluatedStates = evaluateFieldStates(form.fields, submissionData);
     const dynamicSchema = generateDynamicZodSchema(form.fields, evaluatedStates);

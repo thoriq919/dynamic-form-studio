@@ -89,6 +89,12 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       }
     });
 
+    let currentUser: any = null;
+    try {
+      const stored = localStorage.getItem('df_auth_user');
+      if (stored) currentUser = JSON.parse(stored);
+    } catch (e) {}
+
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/forms/${formConfig.id}/submit`, {
@@ -98,6 +104,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
         },
         body: JSON.stringify({
           data: cleanedData,
+          formConfig,
+          user: currentUser,
         }),
       });
 
@@ -108,7 +116,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
       setSubmittedData(cleanedData);
       if (onSubmitSuccess) {
-        onSubmitSuccess(json);
+        onSubmitSuccess(json.data || json);
       }
     } catch (err: any) {
       setSubmitError(err.message || 'An error occurred during submission');

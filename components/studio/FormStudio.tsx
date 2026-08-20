@@ -9,6 +9,7 @@ import { FormCanvas } from './FormCanvas';
 import { FieldConfigDrawer } from './FieldConfigDrawer';
 import { DashboardOverview } from './DashboardOverview';
 import { UserManagement } from './UserManagement';
+import { SubmissionDetailModal } from './SubmissionDetailModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ToastContainer, ToastItem, ToastType } from '@/components/ui/ToastNotification';
 import {
@@ -17,6 +18,9 @@ import {
   X,
   AlertTriangle,
   ArrowRight,
+  ChevronRight,
+  Search,
+  Filter,
   TrendingUp,
   FileText,
   Database,
@@ -89,6 +93,9 @@ export const FormStudio: React.FC<FormStudioProps> = ({
   const [activeDropSlot, setActiveDropSlot] = useState<string | null>(null);
   const [history, setHistory] = useState<FormConfig[]>([form]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [selectedDetailSubmission, setSelectedDetailSubmission] = useState<FormSubmission | null>(null);
+  const [submissionSearch, setSubmissionSearch] = useState('');
+  const [submissionFormFilter, setSubmissionFormFilter] = useState('all');
 
   const showToast = (type: ToastType, title: string, message?: string) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
@@ -688,39 +695,72 @@ export const FormStudio: React.FC<FormStudioProps> = ({
                 </div>
               )}
 
-              {submissionsList.length > 0 && (
-                <div className="pt-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                    Recent Submissions History
-                  </h3>
-                  <div className="space-y-3">
-                    {submissionsList.slice(0, 5).map((sub, idx) => (
-                      <div
-                        key={sub.id || idx}
-                        className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                            <CheckCircle2 className="w-4 h-4" />
+              {(() => {
+                const mySubmissions = submissionsList.filter(sub => {
+                  if (sub.user_id && currentUser?.id && String(sub.user_id) === String(currentUser.id)) return true;
+                  if (sub.user_name && currentUser?.name && sub.user_name.toLowerCase() === currentUser.name.toLowerCase()) return true;
+                  if (sub.user_name && currentUser?.username && sub.user_name.toLowerCase() === currentUser.username.toLowerCase()) return true;
+                  return false;
+                });
+
+                if (mySubmissions.length === 0) return null;
+
+                return (
+                  <div className="pt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <span>Riwayat Jawaban Saya ({mySubmissions.length})</span>
+                      </h3>
+                      <span className="text-[11px] text-slate-400">
+                        Klik kartu atau tombol Detail untuk melihat rincian jawaban Anda
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {mySubmissions.map((sub, idx) => (
+                        <div
+                          key={sub.id || idx}
+                          onClick={() => setSelectedDetailSubmission(sub)}
+                          className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-indigo-300 hover:shadow-sm transition flex items-center justify-between text-xs cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold group-hover:scale-105 transition flex-shrink-0">
+                              <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">
+                                {sub.form_name || `Form #${sub.form_id}`}
+                              </h4>
+                              <span className="text-[11px] text-slate-400 block">
+                                Diserahkan: {new Date(sub.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-slate-900">
-                              {sub.form_name || `Form #${sub.form_id}`}
-                            </h4>
-                            <span className="text-[11px] text-slate-400">
-                              Submitted: {new Date(sub.created_at).toLocaleString('en-US')}
+
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">
+                              {Object.keys(sub.data).length} Jawaban
                             </span>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDetailSubmission(sub);
+                              }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition shadow-2xs group-hover:bg-indigo-600 group-hover:text-white"
+                            >
+                              <span>Lihat Jawaban</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-
-                        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">
-                          {Object.keys(sub.data).length} Answers
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         )}
@@ -739,6 +779,7 @@ export const FormStudio: React.FC<FormStudioProps> = ({
             onViewAllForms={() => setActiveNav('forms')}
             onViewUsers={() => setActiveNav('users')}
             onViewSubmissions={() => setActiveNav('configurations')}
+            onViewSubmissionDetail={setSelectedDetailSubmission}
           />
         )}
 
@@ -842,87 +883,160 @@ export const FormStudio: React.FC<FormStudioProps> = ({
 
         {!isResponderOnly && activeNav === 'configurations' && (
           <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc] overflow-y-auto p-8 space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-700 mb-2">
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Database Submissions Manager</span>
+                </div>
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Database Submissions & Data Logs
+                  Daftar Respon & Submission Formulir
                 </h1>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Review all submitted form data validated through the Dynamic Zod and Rule Engine.
+                  Tinjau semua jawaban yang telah dikirim oleh responden. Klik tombol Detail atau tanda (&gt;) untuk melihat rincian setiap jawaban.
                 </p>
               </div>
 
-              <button
-                onClick={fetchFormsAndSubmissions}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition"
-              >
-                Refresh Data
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={fetchFormsAndSubmissions}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition"
+                >
+                  <span>Refresh Data</span>
+                </button>
+              </div>
             </div>
 
+            {/* Search and Filters */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={submissionSearch}
+                  onChange={e => setSubmissionSearch(e.target.value)}
+                  placeholder="Cari form, nama pengisi, ID, atau data..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/50"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <select
+                    value={submissionFormFilter}
+                    onChange={e => setSubmissionFormFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  >
+                    <option value="all">Semua Formulir ({submissionsList.length})</option>
+                    {formsList.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Submissions List */}
             {submissionsList.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
                 <Database className="w-10 h-10 text-slate-300 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800">No submissions recorded yet</h3>
+                <h3 className="text-base font-bold text-slate-800">Belum ada respon formulir yang tersimpan</h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Open the Form Builder or click "Fill Form" to submit responses to the database.
+                  Buka Form Studio atau klik "Fill Form" untuk mengisi dan menyimpan data formulir ke database.
                 </p>
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveNav('builder');
                     setIsPreviewOpen(true);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs"
                 >
-                  Test Fill Form Now
+                  Test Isi Formulir Sekarang
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {submissionsList.map((sub, idx) => (
-                  <div
-                    key={sub.id || idx}
-                    className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
-                          #{sub.id}
-                        </span>
-                        <div>
-                          <h4 className="font-bold text-sm text-slate-900">
-                            {sub.form_name || `Form #${sub.form_id}`}
-                          </h4>
-                          <span className="text-[11px] text-slate-400">
-                            Submitted: {new Date(sub.created_at).toLocaleString('en-US')}
-                            {sub.user_name && ` by ${sub.user_name}`}
+              (() => {
+                const filteredSubmissions = submissionsList.filter(sub => {
+                  if (submissionFormFilter !== 'all' && String(sub.form_id) !== String(submissionFormFilter)) {
+                    return false;
+                  }
+                  if (submissionSearch.trim()) {
+                    const q = submissionSearch.toLowerCase();
+                    const matchForm = (sub.form_name || '').toLowerCase().includes(q);
+                    const matchUser = (sub.user_name || '').toLowerCase().includes(q);
+                    const matchId = String(sub.id).includes(q);
+                    const matchData = JSON.stringify(sub.data).toLowerCase().includes(q);
+                    return matchForm || matchUser || matchId || matchData;
+                  }
+                  return true;
+                });
+
+                if (filteredSubmissions.length === 0) {
+                  return (
+                    <div className="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-400 text-xs">
+                      Tidak ada submission yang cocok dengan pencarian / filter formulir.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {filteredSubmissions.map((sub, idx) => (
+                      <div
+                        key={sub.id || idx}
+                        onClick={() => setSelectedDetailSubmission(sub)}
+                        className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:border-indigo-400 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition flex-shrink-0">
+                            #{idx + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition truncate">
+                                {sub.form_name || `Form #${sub.form_id}`}
+                              </h4>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                Validated & Saved
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1 flex-wrap">
+                              <span>Waktu: {new Date(sub.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                              {sub.user_name && (
+                                <span>• Pengisi: <strong className="text-slate-600">{sub.user_name}</strong></span>
+                              )}
+                              <span>• ID Submission: #{sub.id}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-bold text-xs">
+                            {Object.keys(sub.data).length} Jawaban
                           </span>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDetailSubmission(sub);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm group-hover:scale-105"
+                          >
+                            <span>Detail</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold text-[10px]">
-                        Validated & Saved
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.entries(sub.data).map(([key, val]) => (
-                        <div
-                          key={key}
-                          className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1"
-                        >
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            {key}
-                          </span>
-                          <p className="text-xs font-semibold text-slate-800 break-words">
-                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()
             )}
           </div>
         )}
@@ -1056,6 +1170,14 @@ export const FormStudio: React.FC<FormStudioProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {selectedDetailSubmission && (
+        <SubmissionDetailModal
+          submission={selectedDetailSubmission}
+          forms={formsList}
+          onClose={() => setSelectedDetailSubmission(null)}
+        />
       )}
     </div>
   );

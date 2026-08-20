@@ -20,6 +20,7 @@ interface DashboardOverviewProps {
   onViewAllForms: () => void;
   onViewUsers: () => void;
   onViewSubmissions: () => void;
+  onViewSubmissionDetail?: (sub: FormSubmission) => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -32,6 +33,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onViewAllForms,
   onViewUsers,
   onViewSubmissions,
+  onViewSubmissionDetail,
 }) => {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -73,18 +75,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       title: `${f.name} updated`,
       time: getRelativeTime(f.updated_at || f.created_at),
       color: i === 0 ? 'bg-indigo-600' : 'bg-slate-400',
+      onClick: () => onEditForm(f),
     }))),
-    ...(submissions.slice(0, 2).map((s, i) => ({
+    ...(submissions.slice(0, 4).map((s) => ({
       id: `sub_${s.id}`,
       title: `Response submitted on ${s.form_name || 'Form'}`,
       time: getRelativeTime(s.created_at),
       color: 'bg-emerald-500',
+      onClick: () => onViewSubmissionDetail ? onViewSubmissionDetail(s) : onViewSubmissions(),
     }))),
   ];
 
   const activities = mockActivities.length > 0 ? mockActivities : [
-    { id: '1', title: 'System initialized and ready', time: 'Just now', color: 'bg-indigo-600' },
-    { id: '2', title: 'Administrator workspace active', time: 'Today', color: 'bg-emerald-500' },
+    { id: '1', title: 'System initialized and ready', time: 'Just now', color: 'bg-indigo-600', onClick: undefined },
+    { id: '2', title: 'Administrator workspace active', time: 'Today', color: 'bg-emerald-500', onClick: undefined },
   ];
 
   return (
@@ -292,12 +296,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <div className="absolute left-2.5 top-2 bottom-2 w-px bg-slate-200" />
 
               {activities.map(act => (
-                <div key={act.id} className="relative flex items-start gap-3 text-xs">
+                <div
+                  key={act.id}
+                  onClick={act.onClick}
+                  className={`relative flex items-start gap-3 text-xs ${
+                    act.onClick ? 'cursor-pointer hover:bg-slate-50 p-1.5 -ml-1.5 rounded-xl transition' : ''
+                  }`}
+                >
                   <div
-                    className={`w-2.5 h-2.5 rounded-full ${act.color} ring-4 ring-white absolute -left-6 top-1`}
+                    className={`w-2.5 h-2.5 rounded-full ${act.color} ring-4 ring-white absolute -left-6 top-1.5`}
                   />
                   <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="font-bold text-slate-800 truncate">{act.title}</p>
+                    <p className="font-bold text-slate-800 truncate hover:text-indigo-600 transition">
+                      {act.title}
+                    </p>
                     <span className="text-[11px] text-slate-400 block">{act.time}</span>
                   </div>
                 </div>

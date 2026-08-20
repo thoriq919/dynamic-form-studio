@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import { FormConfig, FormField, FieldOption, FieldRule, FormSubmission, User } from '@/types/form';
+import { initialFormsData } from '@/lib/seedData';
 import crypto from 'crypto';
 
 export function hashPassword(password: string): string {
@@ -8,6 +9,22 @@ export function hashPassword(password: string): string {
 
 declare global {
   var __globalMysqlPool: mysql.Pool | undefined;
+  var __memoryForms: FormConfig[] | undefined;
+  var __memorySubmissions: FormSubmission[] | undefined;
+}
+
+export function getMemoryForms(): FormConfig[] {
+  if (!global.__memoryForms) {
+    global.__memoryForms = [...initialFormsData];
+  }
+  return global.__memoryForms;
+}
+
+export function getMemorySubmissions(): FormSubmission[] {
+  if (!global.__memorySubmissions) {
+    global.__memorySubmissions = [];
+  }
+  return global.__memorySubmissions;
 }
 
 export async function initMySQL() {
@@ -288,90 +305,94 @@ export async function deleteUser(id: number | string): Promise<{ success: boolea
 
 export async function getAllForms(): Promise<FormConfig[]> {
   const pool = await initMySQL();
-  if (!pool) return [];
-
-  try {
-    const [rows]: any = await pool.query('SELECT * FROM forms ORDER BY id DESC');
-    const forms: FormConfig[] = [];
-    for (const r of rows) {
-      const fullForm = await getFormById(r.id);
-      if (fullForm) forms.push(fullForm);
-    }
-    return forms;
-  } catch (err) {
-    return [];
+  if (pool) {
+    try {
+      const [rows]: any = await pool.query('SELECT * FROM forms ORDER BY id DESC');
+      const forms: FormConfig[] = [];
+      for (const r of rows) {
+        const fullForm = await getFormById(r.id);
+        if (fullForm) forms.push(fullForm);
+      }
+      if (forms.length > 0) return forms;
+    } catch (err) {}
   }
+  return getMemoryForms();
 }
 
 export async function getFormById(id: number | string): Promise<FormConfig | null> {
   const numericId = Number(id);
   const pool = await initMySQL();
-  if (!pool) return null;
 
-  try {
-    const [formRows]: any = await pool.query('SELECT * FROM forms WHERE id = ?', [numericId]);
-    if (formRows.length === 0) return null;
-    const form = formRows[0];
+  if (pool && !isNaN(numericId)) {
+    try {
+      const [formRows]: any = await pool.query('SELECT * FROM forms WHERE id = ?', [numericId]);
+      if (formRows.length > 0) {
+        const form = formRows[0];
+        const [fieldsRows]: any = await pool.query(
+          'SELECT * FROM form_fields WHERE form_id = ? ORDER BY sort_order ASC',
+          [numericId]
+        );
 
-    const [fieldsRows]: any = await pool.query(
-      'SELECT * FROM form_fields WHERE form_id = ? ORDER BY sort_order ASC',
-      [numericId]
-    );
+        const fields: FormField[] = [];
+        for (const f of fieldsRows) {
+          const [optRows]: any = await pool.query(
+            'SELECT * FROM field_options WHERE field_id = ? ORDER BY sort_order ASC',
+            [f.id]
+          );
+          const [ruleRows]: any = await pool.query(
+            'SELECT * FROM field_rules WHERE field_id = ?',
+            [f.id]
+          );
 
-    const fields: FormField[] = [];
-    for (const f of fieldsRows) {
-      const [optRows]: any = await pool.query(
-        'SELECT * FROM field_options WHERE field_id = ? ORDER BY sort_order ASC',
-        [f.id]
-      );
-      const [ruleRows]: any = await pool.query(
-        'SELECT * FROM field_rules WHERE field_id = ?',
-        [f.id]
-      );
+          fields.push({
+            id: f.id,
+            form_id: f.form_id,
+            parent_id: f.parent_id,
+            name: f.name,
+            label: f.label,
+            type: f.type,
+            required: Boolean(f.required),
+            sort_order: f.sort_order,
+            placeholder: f.placeholder,
+            help_text: f.help_text,
+            grid_span: f.grid_span,
+            status: f.status,
+            options: optRows.map((o: any) => ({
+              id: o.id,
+              field_id: o.field_id,
+              label: o.label,
+              value: o.value,
+              sort_order: o.sort_order,
+            })),
+            rules: ruleRows.map((r: any) => ({
+              id: r.id,
+              field_id: r.field_id,
+              source_field_id: r.source_field_id,
+              operator: r.operator,
+              value: r.value,
+              action: r.action,
+            })),
+          });
+        }
 
-      fields.push({
-        id: f.id,
-        form_id: f.form_id,
-        parent_id: f.parent_id,
-        name: f.name,
-        label: f.label,
-        type: f.type,
-        required: Boolean(f.required),
-        sort_order: f.sort_order,
-        placeholder: f.placeholder,
-        help_text: f.help_text,
-        grid_span: f.grid_span,
-        status: f.status,
-        options: optRows.map((o: any) => ({
-          id: o.id,
-          field_id: o.field_id,
-          label: o.label,
-          value: o.value,
-          sort_order: o.sort_order,
-        })),
-        rules: ruleRows.map((r: any) => ({
-          id: r.id,
-          field_id: r.field_id,
-          source_field_id: r.source_field_id,
-          operator: r.operator,
-          value: r.value,
-          action: r.action,
-        })),
-      });
-    }
-
-    return {
-      id: form.id,
-      name: form.name,
-      description: form.description,
-      status: form.status,
-      created_at: form.created_at,
-      updated_at: form.updated_at,
-      fields,
-    };
-  } catch (err) {
-    return null;
+        return {
+          id: form.id,
+          name: form.name,
+          description: form.description,
+          status: form.status,
+          created_at: form.created_at,
+          updated_at: form.updated_at,
+          fields,
+        };
+      }
+    } catch (err) {}
   }
+
+  const memForms = getMemoryForms();
+  const mem = memForms.find(
+    f => String(f.id) === String(id) || f.name.toLowerCase() === String(id).toLowerCase()
+  );
+  return mem || null;
 }
 
 export async function saveForm(formData: Partial<FormConfig>): Promise<FormConfig> {
@@ -386,6 +407,15 @@ export async function saveForm(formData: Partial<FormConfig>): Promise<FormConfi
     updated_at: new Date().toISOString(),
     fields: formData.fields || [],
   };
+
+  // Update memory store
+  const memForms = getMemoryForms();
+  const existingIdx = memForms.findIndex(f => String(f.id) === String(newForm.id));
+  if (existingIdx >= 0) {
+    memForms[existingIdx] = newForm;
+  } else {
+    memForms.unshift(newForm);
+  }
 
   if (!pool) return newForm;
 
@@ -465,15 +495,23 @@ export async function saveForm(formData: Partial<FormConfig>): Promise<FormConfi
         }
       }
     }
-  } catch (err) {}
+  } catch (err: any) {
+    console.error('[saveForm DB Error]:', err.message);
+  }
 
   return newForm;
 }
 
 export async function deleteForm(id: number | string): Promise<boolean> {
   const formIdNum = Number(id);
+
+  // Remove from memory
+  if (global.__memoryForms) {
+    global.__memoryForms = global.__memoryForms.filter(f => String(f.id) !== String(id));
+  }
+
   const pool = await initMySQL();
-  if (!pool) return false;
+  if (!pool) return true;
 
   try {
     const [fields]: any = await pool.query(
@@ -521,43 +559,57 @@ export async function saveFormSubmission(
           JSON.stringify(data),
         ]
       );
-      submission.id = res.insertId;
-    } catch (err) {}
+      if (res && res.insertId) {
+        submission.id = res.insertId;
+      }
+    } catch (err: any) {
+      console.error('[saveFormSubmission DB Error]:', err.message);
+    }
   }
+
+  // Always store in memory fallback
+  const memSubs = getMemorySubmissions();
+  memSubs.unshift(submission);
 
   return submission;
 }
 
 export async function getFormSubmissions(formId?: number | string): Promise<FormSubmission[]> {
   const pool = await initMySQL();
-  if (!pool) return [];
+  if (pool) {
+    try {
+      let query = `
+        SELECT fs.id, fs.form_id, fs.user_id, fs.user_name, fs.data, fs.created_at, f.name as form_name
+        FROM form_submissions fs
+        LEFT JOIN forms f ON fs.form_id = f.id
+      `;
+      const params: any[] = [];
+      if (formId) {
+        query += ` WHERE fs.form_id = ?`;
+        params.push(Number(formId));
+      }
+      query += ` ORDER BY fs.id DESC`;
 
-  try {
-    let query = `
-      SELECT fs.id, fs.form_id, fs.user_id, fs.user_name, fs.data, fs.created_at, f.name as form_name
-      FROM form_submissions fs
-      LEFT JOIN forms f ON fs.form_id = f.id
-    `;
-    const params: any[] = [];
-    if (formId) {
-      query += ` WHERE fs.form_id = ?`;
-      params.push(Number(formId));
-    }
-    query += ` ORDER BY fs.id DESC`;
-
-    const [rows]: any = await pool.query(query, params);
-    return rows.map((r: any) => ({
-      id: r.id,
-      form_id: r.form_id,
-      form_name: r.form_name || `Form #${r.form_id}`,
-      user_id: r.user_id,
-      user_name: r.user_name,
-      data: typeof r.data === 'string' ? JSON.parse(r.data) : r.data,
-      created_at: r.created_at,
-    }));
-  } catch (err) {
-    return [];
+      const [rows]: any = await pool.query(query, params);
+      if (rows && rows.length > 0) {
+        return rows.map((r: any) => ({
+          id: r.id,
+          form_id: r.form_id,
+          form_name: r.form_name || `Form #${r.form_id}`,
+          user_id: r.user_id,
+          user_name: r.user_name,
+          data: typeof r.data === 'string' ? JSON.parse(r.data) : r.data,
+          created_at: r.created_at,
+        }));
+      }
+    } catch (err) {}
   }
+
+  const memSubs = getMemorySubmissions();
+  if (formId) {
+    return memSubs.filter(s => String(s.form_id) === String(formId));
+  }
+  return memSubs;
 }
 
 export const getAllSubmissions = getFormSubmissions;

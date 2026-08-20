@@ -137,6 +137,10 @@ export function evaluateFieldStates(
           targetState.visible = true;
         } else if (rule.action === 'hide') {
           targetState.visible = false;
+        } else if (rule.action === 'required') {
+          targetState.required = true;
+        } else if (rule.action === 'optional') {
+          targetState.required = false;
         }
       }
     }
