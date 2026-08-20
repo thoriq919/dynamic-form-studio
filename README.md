@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>📋 Dynamic Form App</strong>
+  <strong>Dynamic Form App</strong>
 </p>
 
 <p align="center">
@@ -8,23 +8,23 @@
 
 ---
 
-## ✨ Fitur
+## Fitur
 
-- 🧱 **Form Builder Visual** — rancang struktur form secara drag & drop.
-- 🎛️ **3 Tipe Field** — `select`, `option` (radio), dan `free_text`.
-- 🔒 **Mandatory / Optional** — tiap field bisa diatur wajib diisi atau opsional.
-- ⚡ **Conditional Rules** — field tampil/sembunyi berdasarkan jawaban field lain.
-- 🌳 **Tree Dependency** — hubungan field berjenjang parent → child dengan kaskade otomatis.
-- 🔁 **Conditional Mandatory / Optional** — status wajib berubah mengikuti rules.
-- ✅ **Dynamic Validation** — schema validasi di-generate otomatis dari konfigurasi.
-- 📊 **Dashboard & Submission Logs** — pantau statistik form dan seluruh jawaban masuk.
-- 👥 **Role-based Access** — peran `admin` (membangun form) dan `responder` (mengisi form).
-- 📱 **Responsive UI** — nyaman di desktop, tablet, dan mobile.
-- ↩️ **Undo / Redo** — riwayat perubahan saat membangun form.
+- **Form Builder Visual** — rancang struktur form secara drag & drop.
+- **3 Tipe Field** — `select`, `option` (radio), dan `free_text`.
+- **Mandatory / Optional** — tiap field bisa diatur wajib diisi atau opsional.
+- **Conditional Rules** — field tampil/sembunyi berdasarkan jawaban field lain.
+- **Tree Dependency** — hubungan field berjenjang parent → child dengan kaskade otomatis.
+- **Conditional Mandatory / Optional** — status wajib berubah mengikuti rules.
+- **Dynamic Validation** — schema validasi di-generate otomatis dari konfigurasi.
+- **Dashboard & Submission Logs** — pantau statistik form dan seluruh jawaban masuk.
+- **Role-based Access** — peran `admin` (membangun form) dan `responder` (mengisi form).
+- **Responsive UI** — nyaman di desktop, tablet, dan mobile.
+- **Undo / Redo** — riwayat perubahan saat membangun form.
 
 ---
 
-## 🧠 Konsep Dynamic Form
+## Konsep Dynamic Form
 
 Form tidak dibuat hard-coded. Struktur form disimpan sebagai konfigurasi dan dirender dinamis oleh **Rule Engine**:
 
@@ -74,7 +74,7 @@ Field yang tampil dan status mandatory-nya ditentukan oleh rules yang dievaluasi
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Bagian | Teknologi |
 | --- | --- |
@@ -86,7 +86,7 @@ Field yang tampil dan status mandatory-nya ditentukan oleh rules yang dievaluasi
 
 ---
 
-## 🚀 Menjalankan Project
+## Menjalankan Project
 
 ### Prasyarat
 
@@ -115,7 +115,7 @@ Buka [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 📁 Struktur Project
+## Struktur Project
 
 ```text
 app/
@@ -153,7 +153,7 @@ types/
 
 ---
 
-## 🔌 API
+## API
 
 | Method | Endpoint | Deskripsi |
 | --- | --- | --- |
@@ -169,7 +169,3 @@ types/
 | `POST` | `/api/seed` | Inisialisasi demo form |
 
 ---
-
-## 📄 Lisensi
-
-Proyek ini bersifat pribadi. Seluruh hak cipta dilindungi.
