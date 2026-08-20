@@ -179,11 +179,10 @@ export const FieldConfigDrawer: React.FC<FieldConfigDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => onUpdateField({ status: 'active' })}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition ${
-                  currentVisibility === 'show'
-                    ? 'bg-white text-emerald-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
+                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition ${currentVisibility === 'show'
+                  ? 'bg-white text-emerald-700 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800'
+                  }`}
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Show</span>
@@ -191,11 +190,10 @@ export const FieldConfigDrawer: React.FC<FieldConfigDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => onUpdateField({ status: 'hide' })}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition ${
-                  currentVisibility === 'hide'
-                    ? 'bg-white text-rose-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
+                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition ${currentVisibility === 'hide'
+                  ? 'bg-white text-rose-700 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800'
+                  }`}
               >
                 <EyeOff className="w-3.5 h-3.5" />
                 <span>Hide</span>
@@ -241,7 +239,7 @@ export const FieldConfigDrawer: React.FC<FieldConfigDrawerProps> = ({
                 className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline"
               >
                 <Plus className="w-3 h-3" />
-                <span>+ Add Option</span>
+                <span>Add Option</span>
               </button>
             </div>
 
@@ -341,39 +339,48 @@ export const FieldConfigDrawer: React.FC<FieldConfigDrawerProps> = ({
                   <option value="equals">Equals</option>
                   <option value="not_equals">Not Equals</option>
                   <option value="contains">Contains</option>
-                  <option value="greater_than">Greater Than (&gt;)</option>
-                  <option value="less_than">Less Than (&lt;)</option>
+                  <option value="is_empty">Is Empty</option>
+                  <option value="is_not_empty">Is Not Empty</option>
+                  <option value="in">In (List / Comma Separated)</option>
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-600 block uppercase">
-                  Target Value:
-                </label>
-                {selectedSourceField &&
-                selectedSourceField.options &&
-                selectedSourceField.options.length > 0 ? (
-                  <select
-                    value={activeRule.value}
-                    onChange={e => handleUpdateRule({ value: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  >
-                    {selectedSourceField.options.map(opt => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label} ({opt.value})
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={activeRule.value}
-                    onChange={e => handleUpdateRule({ value: e.target.value })}
-                    placeholder="Matching target value"
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                )}
-              </div>
+              {activeRule.operator !== 'is_empty' && activeRule.operator !== 'is_not_empty' ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-600 block uppercase">
+                    Target Value:
+                  </label>
+                  {selectedSourceField &&
+                    selectedSourceField.options &&
+                    selectedSourceField.options.length > 0 ? (
+                    <select
+                      value={activeRule.value}
+                      onChange={e => handleUpdateRule({ value: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      {selectedSourceField.options.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label} ({opt.value})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={activeRule.value}
+                      onChange={e => handleUpdateRule({ value: e.target.value })}
+                      placeholder="Matching target value"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 italic">
+                  {activeRule.operator === 'is_empty'
+                    ? 'Rule triggers when the source field is left blank.'
+                    : 'Rule triggers as soon as the source field is filled.'}
+                </div>
+              )}
             </div>
           )}
         </div>
