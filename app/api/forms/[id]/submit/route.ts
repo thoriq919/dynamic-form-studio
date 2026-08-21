@@ -57,7 +57,7 @@ export async function POST(
       }
     }
 
-    const saved = await saveFormSubmission(formId, cleanData);
+    const saved = await saveFormSubmission(formId, cleanData, body.user);
 
     return NextResponse.json({
       success: true,

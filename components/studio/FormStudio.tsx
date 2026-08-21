@@ -700,10 +700,9 @@ export const FormStudio: React.FC<FormStudioProps> = ({
                   if (sub.user_id && currentUser?.id && String(sub.user_id) === String(currentUser.id)) return true;
                   if (sub.user_name && currentUser?.name && sub.user_name.toLowerCase() === currentUser.name.toLowerCase()) return true;
                   if (sub.user_name && currentUser?.username && sub.user_name.toLowerCase() === currentUser.username.toLowerCase()) return true;
+                  if (!sub.user_name && !sub.user_id) return true;
                   return false;
                 });
-
-                if (mySubmissions.length === 0) return null;
 
                 return (
                   <div className="pt-6 space-y-4">
@@ -712,52 +711,64 @@ export const FormStudio: React.FC<FormStudioProps> = ({
                         <FileCheck className="w-4 h-4 text-emerald-600" />
                         <span>Riwayat Jawaban Saya ({mySubmissions.length})</span>
                       </h3>
-                      <span className="text-[11px] text-slate-400">
-                        Klik kartu atau tombol Detail untuk melihat rincian jawaban Anda
-                      </span>
+                      {mySubmissions.length > 0 && (
+                        <span className="text-[11px] text-slate-400">
+                          Klik kartu atau tombol Detail untuk melihat rincian jawaban Anda
+                        </span>
+                      )}
                     </div>
 
-                    <div className="space-y-3">
-                      {mySubmissions.map((sub, idx) => (
-                        <div
-                          key={sub.id || idx}
-                          onClick={() => setSelectedDetailSubmission(sub)}
-                          className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-indigo-300 hover:shadow-sm transition flex items-center justify-between text-xs cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold group-hover:scale-105 transition flex-shrink-0">
-                              <CheckCircle2 className="w-5 h-5" />
+                    {mySubmissions.length === 0 ? (
+                      <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-2">
+                        <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                        <h4 className="text-sm font-bold text-slate-700">Belum Ada Jawaban yang Diserahkan</h4>
+                        <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                          Silakan pilih salah satu formulir di atas dan klik <strong>"Mulai Isi Form"</strong> untuk mengirimkan respon data Anda.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {mySubmissions.map((sub, idx) => (
+                          <div
+                            key={sub.id || idx}
+                            onClick={() => setSelectedDetailSubmission(sub)}
+                            className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-indigo-300 hover:shadow-sm transition flex items-center justify-between text-xs cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold group-hover:scale-105 transition flex-shrink-0">
+                                <CheckCircle2 className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">
+                                  {sub.form_name || `Form #${sub.form_id}`}
+                                </h4>
+                                <span className="text-[11px] text-slate-400 block">
+                                  Diserahkan: {new Date(sub.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                </span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">
-                                {sub.form_name || `Form #${sub.form_id}`}
-                              </h4>
-                              <span className="text-[11px] text-slate-400 block">
-                                Diserahkan: {new Date(sub.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">
+                                {Object.keys(sub.data).length} Jawaban
                               </span>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDetailSubmission(sub);
+                                }}
+                                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition shadow-2xs group-hover:bg-indigo-600 group-hover:text-white"
+                              >
+                                <span>Lihat Jawaban</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">
-                              {Object.keys(sub.data).length} Jawaban
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedDetailSubmission(sub);
-                              }}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition shadow-2xs group-hover:bg-indigo-600 group-hover:text-white"
-                            >
-                              <span>Lihat Jawaban</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1176,6 +1187,7 @@ export const FormStudio: React.FC<FormStudioProps> = ({
         <SubmissionDetailModal
           submission={selectedDetailSubmission}
           forms={formsList}
+          isAdmin={currentUser?.role === 'admin'}
           onClose={() => setSelectedDetailSubmission(null)}
         />
       )}
